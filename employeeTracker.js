@@ -57,7 +57,7 @@ function onMainPromptAnswer({ action }) {
 function addData() {
   inquirer
     .prompt({
-      name: "data",
+      name: "action",
       type: "rawlist",
       message: "What data would you like to add?",
       choices: [
@@ -90,22 +90,21 @@ function onAddDataAnswer({ action }) {
 }
 
 function addDepartment() {
+  console.log("addDepartment running");
   inquirer
     .prompt({
       name: "department",
       type: "input",
       message: "What is the name of the new department?"
     })
-    .then(({ answer }) => {
-      const newDepartment = {
-        department: answer.department
-      }
-      const query = "INSERT INTO departments SET ?";
-      connection.query(query, newDepartment, err => {
+    .then(({ department }) => {
+      console.log(department);
+      const query = "INSERT INTO departments (name) VALUES (?)";
+      connection.query(query, department, err => {
         if (err) {
           throw err;
         }
-        console.log(`Added new department: ${newDepartment.department} to DEPARTMENTS TABLE!`);
+        console.log(`Added new department "${department}" to departments table!`);
 
         mainPrompt();
       })
@@ -113,6 +112,7 @@ function addDepartment() {
 }
 
 function addRole() {
+  console.log("addRole running");
   inquirer
     .prompt(
       [
@@ -129,6 +129,7 @@ function addRole() {
       ]
     )
     .then(({ answers }) => {
+      console.log(answers);
       const newRole = {
         role: answers.role,
         salary: answers.salary
@@ -146,6 +147,7 @@ function addRole() {
 }
 
 function addEmployee() {
+  console.log("addEmployee running");
   inquirer
     .prompt(
       [
@@ -162,6 +164,7 @@ function addEmployee() {
       ]
     )
     .then(({ answers }) => {
+      console.log(answers);
       const newEmployee = {
         firstName: answers.first,
         lastName: answers.last
@@ -179,9 +182,10 @@ function addEmployee() {
 }
 
 function viewData() {
+  console.log("viewData running");
   inquirer
     .prompt({
-      name: "data",
+      name: "action",
       type: "rawlist",
       message: "What data would you like to view?",
       choices: [
@@ -214,6 +218,7 @@ function onViewDataAnswer({ action }) {
 }
 
 function viewDepartments() {
+  console.log("viewDepartments running");
   const query = "SELECT * FROM departments";
   connection.query(query, (err, res) => {
     if (err) {
@@ -221,10 +226,12 @@ function viewDepartments() {
     }
     const departmentData = cTable.getTable(res);
     console.log(departmentData);
+    viewDifferentData();
   })
 }
 
 function viewRoles() {
+  console.log("addRoles running");
   const query = "SELECT * FROM roles";
   connection.query(query, (err, res) => {
     if (err) {
@@ -232,10 +239,12 @@ function viewRoles() {
     }
     const roleData = cTable.getTable(res);
     console.log(roleData);
+    viewDifferentData();
   })
 }
 
 function viewEmployees() {
+  console.log("viewEmployees running");
   const query = "SELECT * FROM employees";
   connection.query(query, (err, res) => {
     if (err) {
@@ -243,33 +252,58 @@ function viewEmployees() {
     }
     const employeeData = cTable.getTable(res);
     console.log(employeeData);
+    viewDifferentData();
   })
+}
+
+function viewDifferentData() {
+  inquirer
+    .prompt({
+      name: "view",
+      type: "confirm",
+      message: "View different data?",
+    }).then(onViewDifferentDataAnswer);
+}
+
+function onViewDifferentDataAnswer(response) {
+  if (response.view) {
+    viewData();
+  }
+  else {
+    exitTracker();
+  }
 }
 
 function chooseEmployee() {
 
+  console.log("chooseEmployees running");
+
   const employees = [];
 
-  const query = "SELECT * FROM employees ?";
+  const query = "SELECT * FROM employees";
   connection.query(query, (err, res) => {
     if (err) {
       throw err;
     }
-    res.forEach(employee);
-    employees.push(`${employee.last_name}`);
+    res.forEach(employee => {
+      employees.push(`${employee.last_name}`);
+    });
+
+    console.log(employees);
 
     inquirer
       .prompt({
-        name: "data",
+        name: "action",
         type: "rawlist",
         message: "Which employee would you like to update?",
         choices: employees,
-      }).then(updateEmployeeRole(answer));
+      }).then(updateEmployeeRole);
   })
 }
 
-function updateEmployeeRole(answer) {
-  const employee = answer;
+function updateEmployeeRole({ action }) {
+  console.log("updateEmployeeRole running");
+  const employee = action;
   inquirer
     .prompt({
       name: "role",
@@ -281,18 +315,22 @@ function updateEmployeeRole(answer) {
         "Accountant"
       ]
     })
-    .then(({ newRole }) => {
-      if (newRole == "CEO") {
-        let roleID = 1;
+    .then(({ role }) => {
+      console.log(role);
+      let roleID;
+      if (role == "CEO") {
+        roleID = 1;
       }
-      if (newRole == "Sales Representative") {
-        let roleID = 2;
+      if (role == "Sales Representative") {
+        roleID = 2;
       }
-      if (newRole == "Accountant") {
-        let roleID = 3;
+      if (role == "Accountant") {
+        roleID = 3;
       }
-      const query = "UPDATE employees.role_id SET role_id = ? WHERE employee.last_name = ?";
-      connection.query(query, { roleID }, { employee }, err => {
+      console.log(roleID);
+      console.log(employee);
+      const query = "UPDATE employees SET role_id = ? WHERE employees.last_name = ?";
+      connection.query(query, [roleID, employee], err => {
         if (err) {
           throw err;
         }
@@ -304,6 +342,7 @@ function updateEmployeeRole(answer) {
 }
 
 function exitTracker() {
+  console.log("exitTracker running");
   console.log("Goodbye!");
   connection.end();
 }
