@@ -134,12 +134,12 @@ function addRole() {
         role: answers.role,
         salary: answers.salary
       }
-      const query = "INSERT INTO roles SET ?";
-      connection.query(query, newRole, err => {
+      const query = "INSERT INTO roles (role, salary) VALUES (?, ?)";
+      connection.query(query, [newRole.role, newRole.salary], err => {
         if (err) {
           throw err;
         }
-        console.log(`Added new role: ${newRole.role} to ROLES TABLE at a salary of ${newRole.salary}!`);
+        console.log(`Added new role "${newRole.role}" to roles table at a salary of "${newRole.salary}"!`);
 
         mainPrompt();
       })
@@ -169,12 +169,12 @@ function addEmployee() {
         firstName: answers.first,
         lastName: answers.last
       }
-      const query = "INSERT INTO employees SET ?";
-      connection.query(query, newEmployee, err => {
+      const query = "INSERT INTO employees (first_name, last_name) VALUES (?, ?)";
+      connection.query(query, [newEmployee.firstName, newEmployee.lastname], err => {
         if (err) {
           throw err;
         }
-        console.log(`Added new employee: ${newEmployee.firstName} ${newEmployee.lastName} to EMPLOYEES TABLE!`);
+        console.log(`Added new employee "${newEmployee.firstName} ${newEmployee.lastName}" to employees table!`);
 
         mainPrompt();
       })
