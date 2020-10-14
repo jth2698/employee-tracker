@@ -45,7 +45,7 @@ function onMainPromptAnswer({ action }) {
       break;
 
     case "Update employee roles":
-      chooseEmployee();
+      updateData();
       break;
 
     case "Exit":
@@ -98,7 +98,6 @@ function addDepartment() {
       message: "What is the name of the new department?"
     })
     .then(({ department }) => {
-      console.log(department);
       const query = "INSERT INTO departments (name) VALUES (?)";
       connection.query(query, department, err => {
         if (err) {
@@ -113,41 +112,91 @@ function addDepartment() {
 
 function addRole() {
   console.log("addRole running");
-  inquirer
-    .prompt(
-      [
-        {
-          name: "role",
-          type: "input",
-          message: "What is the name of the new role?"
-        },
-        {
-          name: "salary",
-          type: "input",
-          message: "What is the salary for the new role?"
-        }
-      ]
-    )
-    .then(({ answers }) => {
-      console.log(answers);
-      const newRole = {
-        role: answers.role,
-        salary: answers.salary
-      }
-      const query = "INSERT INTO roles (role, salary) VALUES (?, ?)";
-      connection.query(query, [newRole.role, newRole.salary], err => {
-        if (err) {
-          throw err;
-        }
-        console.log(`Added new role "${newRole.role}" to roles table at a salary of "${newRole.salary}"!`);
 
-        mainPrompt();
+  departments = [];
+  const query = "SELECT * FROM departments";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+    res.forEach(department => {
+      departments.push({
+        name: department.name,
+        value: department.id,
       })
     })
+
+    inquirer
+      .prompt(
+        [
+          {
+            name: "title",
+            type: "input",
+            message: "What is the title for the new role?"
+          },
+          {
+            name: "salary",
+            type: "input",
+            message: "What is the salary for the new role?"
+          },
+          {
+            name: "departmentID",
+            type: "rawlist",
+            message: "What is the department for the new role?",
+            choices: departments
+          }
+        ]
+      )
+      .then(({ title, salary, departmentID }) => {
+        const newRole = {
+          title: title,
+          salary: salary,
+          departmentID: departmentID
+        }
+        const query = "INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)";
+        connection.query(query, [newRole.title, newRole.salary, newRole.departmentID], err => {
+          if (err) {
+            throw err;
+          }
+          console.log(`Added new title "${newRole.title}" to roles table at a salary of "${newRole.salary}" and with a department ID of "${newRole.departmentID}"!`);
+
+          mainPrompt();
+        })
+      })
+  })
 }
 
 function addEmployee() {
   console.log("addEmployee running");
+
+  roles = [];
+  let query = "SELECT * FROM roles";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+    res.forEach(role => {
+      roles.push({
+        name: role.title,
+        value: role.id,
+      })
+    })
+  })
+
+  employees = [];
+  query = "SELECT * FROM employees";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+    res.forEach(employee => {
+      employees.push({
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id,
+      })
+    })
+  })
+
   inquirer
     .prompt(
       [
@@ -160,21 +209,28 @@ function addEmployee() {
           name: "last",
           type: "input",
           message: "What is the last name of the new employee?"
+        },
+        {
+          name: "roleID",
+          type: "rawlist",
+          message: "What is the new employee's role?",
+          choices: roles
+        },
+        {
+          name: "managerID",
+          type: "rawlist",
+          message: "Who is the new employee's manager?",
+          choices: employees
         }
       ]
     )
-    .then(({ answers }) => {
-      console.log(answers);
-      const newEmployee = {
-        firstName: answers.first,
-        lastName: answers.last
-      }
-      const query = "INSERT INTO employees (first_name, last_name) VALUES (?, ?)";
-      connection.query(query, [newEmployee.firstName, newEmployee.lastname], err => {
+    .then(({ first, last, roleID, managerID }) => {
+      const query = "INSERT INTO employees (first_name, last_name, role_ID, manager_ID) VALUES (?, ?, ?, ?)";
+      connection.query(query, [first, last, roleID, managerID], err => {
         if (err) {
           throw err;
         }
-        console.log(`Added new employee "${newEmployee.firstName} ${newEmployee.lastName}" to employees table!`);
+        console.log(`Added new employee "${first} ${last}" to employees table with a roleID of "${roleID}" and a manager ID of "${managerID}"!`);
 
         mainPrompt();
       })
@@ -192,6 +248,7 @@ function viewData() {
         "View department data",
         "View role data",
         "View employee data",
+        "View employees by manager",
         "Exit"
       ]
     }).then(onViewDataAnswer);
@@ -209,6 +266,10 @@ function onViewDataAnswer({ action }) {
 
     case "View employee data":
       viewEmployees();
+      break;
+
+    case "View employees by manager":
+      viewEmployeesByManager();
       break;
 
     case "Exit":
@@ -256,6 +317,45 @@ function viewEmployees() {
   })
 }
 
+function viewEmployeesByManager() {
+
+  console.log("chooseEmployeeForView running");
+
+  const employees = [];
+  const query = "SELECT * FROM employees";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+
+    res.forEach((employee) => {
+      employees.push({
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id
+      })
+    });
+
+    inquirer
+      .prompt({
+        name: "managerID",
+        type: "rawlist",
+        message: "Which employee's reports you like to view?",
+        choices: employees,
+      }).then(({ managerID }) => {
+
+        const query = "SELECT * FROM employees WHERE manager_ID = ?";
+        connection.query(query, [managerID], (err, res) => {
+          if (err) {
+            throw err;
+          }
+          const employeeByManagerData = cTable.getTable(res);
+          console.log(employeeByManagerData);
+          viewDifferentData();
+        })
+      })
+  })
+}
+
 function viewDifferentData() {
   inquirer
     .prompt({
@@ -274,7 +374,37 @@ function onViewDifferentDataAnswer(response) {
   }
 }
 
-function chooseEmployee() {
+function updateData() {
+  inquirer
+    .prompt({
+      name: "action",
+      type: "rawlist",
+      message: "What employee data would you like to update?",
+      choices: [
+        "Employee role",
+        "Employee manager",
+        "Exit"
+      ]
+    }).then(onUpdateDataAnswer);
+}
+
+function onUpdateDataAnswer({ action }) {
+  switch (action) {
+    case "Employee role":
+      chooseEmployeeForRoleUpdate();
+      break;
+
+    case "Employee manager":
+      chooseEmployeeForManagerUpdate();
+      break;
+
+    case "Exit":
+    default:
+      exitTracker();
+  }
+}
+
+function chooseEmployeeForRoleUpdate() {
 
   console.log("chooseEmployees running");
 
@@ -286,10 +416,8 @@ function chooseEmployee() {
       throw err;
     }
     res.forEach(employee => {
-      employees.push(`${employee.last_name}`);
+      employees.push(`${employee.first_name} ${employee.last_name}`);
     });
-
-    console.log(employees);
 
     inquirer
       .prompt({
@@ -303,38 +431,105 @@ function chooseEmployee() {
 
 function updateEmployeeRole({ action }) {
   console.log("updateEmployeeRole running");
-  const employee = action;
+
+  const employeeLast = action.split(' ')[1];
+
+  let roles = [];
+  let query = "SELECT * FROM roles";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+    res.forEach(role => {
+      roles.push({
+        name: role.title,
+        value: role.id
+      })
+    })
+  })
+
+  console.log(roles);
+
   inquirer
     .prompt({
-      name: "role",
+      name: "roleID",
       type: "rawlist",
       message: "What is this employee's new role?",
-      choices: [
-        "CEO",
-        "Sales Representative",
-        "Accountant"
-      ]
+      choices: roles
     })
-    .then(({ role }) => {
-      console.log(role);
-      let roleID;
-      if (role == "CEO") {
-        roleID = 1;
-      }
-      if (role == "Sales Representative") {
-        roleID = 2;
-      }
-      if (role == "Accountant") {
-        roleID = 3;
-      }
-      console.log(roleID);
-      console.log(employee);
+    .then(({ roleID }) => {
       const query = "UPDATE employees SET role_id = ? WHERE employees.last_name = ?";
-      connection.query(query, [roleID, employee], err => {
+      connection.query(query, [roleID, employeeLast], err => {
         if (err) {
           throw err;
         }
-        console.log(`Updated employee ${employee} to ROLE_ID: ${roleID}!`);
+        console.log(`Updated employee "${employeeLast}" to role_id "${roleID}"!`);
+
+        mainPrompt();
+      });
+    });
+}
+
+function chooseEmployeeForManagerUpdate() {
+
+  console.log("chooseEmployees running");
+
+  const employees = [];
+
+  const query = "SELECT * FROM employees";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+    res.forEach(employee => {
+      employees.push(`${employee.first_name} ${employee.last_name}`);
+    });
+
+    console.log(employees);
+
+    inquirer
+      .prompt({
+        name: "action",
+        type: "rawlist",
+        message: "Which employee would you like to update?",
+        choices: employees,
+      }).then(updateManager);
+  })
+}
+
+function updateManager({ action }) {
+  console.log("updateManager running");
+
+  const employeeLast = action.split(' ')[1];
+
+  let employees = [];
+  let query = "SELECT * FROM employees";
+  connection.query(query, (err, res) => {
+    if (err) {
+      throw err;
+    }
+    res.forEach(employees => {
+      employees.push({
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id
+      })
+    })
+  })
+
+  inquirer
+    .prompt({
+      name: "managerID",
+      type: "rawlist",
+      message: "Who is the employee's new manager?",
+      choices: employees
+    })
+    .then(({ managerID }) => {
+      const query = "UPDATE employees SET manager_id = ? WHERE employees.last_name = ?";
+      connection.query(query, [managerID, employeeLast], err => {
+        if (err) {
+          throw err;
+        }
+        console.log(`Updated employee "${employeeLast}" to manager_id "${managerID}"!`);
 
         mainPrompt();
       });
