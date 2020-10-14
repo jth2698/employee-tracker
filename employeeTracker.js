@@ -25,7 +25,6 @@ let roles = [];
 let employees = [];
 
 function populateDepartments() {
-  console.log("populateDepartments running");
   const query = "SELECT * FROM departments";
   connection.query(query, (err, res) => {
     if (err) {
@@ -42,7 +41,6 @@ function populateDepartments() {
 }
 
 function populateRoles() {
-  console.log("populateRoles running");
   const query = "SELECT * FROM roles";
   connection.query(query, (err, res) => {
     if (err) {
@@ -59,7 +57,6 @@ function populateRoles() {
 }
 
 function populateEmployees() {
-  console.log("populateEmployees running");
   const query = "SELECT * FROM employees";
   connection.query(query, (err, res) => {
     if (err) {
@@ -149,7 +146,6 @@ function onAddDataAnswer({ choice }) {
 
 function addDepartment() {
 
-  console.log("addDepartment running");
   inquirer
     .prompt({
       name: "department",
@@ -207,8 +203,6 @@ function addRole() {
 
 function addEmployee() {
 
-  console.log("addEmployee running");
-
   inquirer
     .prompt(
       [
@@ -249,7 +243,7 @@ function addEmployee() {
 }
 
 function viewData() {
-  console.log("viewData running");
+
   inquirer
     .prompt({
       name: "choice",
@@ -291,7 +285,7 @@ function onViewDataAnswer({ choice }) {
 }
 
 function viewDepartments() {
-  console.log("viewDepartments running");
+
   const query = "SELECT * FROM departments";
   connection.query(query, (err, res) => {
     if (err) {
@@ -304,7 +298,7 @@ function viewDepartments() {
 }
 
 function viewRoles() {
-  console.log("addRoles running");
+
   const query = "SELECT * FROM roles";
   connection.query(query, (err, res) => {
     if (err) {
@@ -317,7 +311,7 @@ function viewRoles() {
 }
 
 function viewEmployees() {
-  console.log("viewEmployees running");
+
   const query = "SELECT * FROM employees";
   connection.query(query, (err, res) => {
     if (err) {
@@ -330,8 +324,6 @@ function viewEmployees() {
 }
 
 function viewEmployeesByManager() {
-
-  console.log("viewEmployeesByManager running");
 
   inquirer
     .prompt({
@@ -404,8 +396,6 @@ function onUpdateDataAnswer({ choice }) {
 }
 
 function chooseEmployeeForRole() {
-
-  console.log(employees);
 
   inquirer
     .prompt({
