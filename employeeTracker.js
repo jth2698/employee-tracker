@@ -244,6 +244,8 @@ function addEmployee() {
 
 function viewData() {
 
+  populateEmployees();
+
   inquirer
     .prompt({
       name: "choice",
@@ -396,6 +398,7 @@ function onUpdateDataAnswer({ choice }) {
 }
 
 function chooseEmployeeForRole() {
+
 
   inquirer
     .prompt({
